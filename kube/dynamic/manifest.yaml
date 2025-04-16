@@ -1,0 +1,125 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nginx-sc
+provisioner: microk8s.io/hostpath
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-sc-pvc
+  namespace: prasad
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: nginx-sc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: prasad
+  labels:
+    app: frontend
+spec:
+  replicas: 3
+  
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: nginx:latest #chandrahari296/nginx:latest
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-storage
+              mountPath: /usr/share/nginx/html
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+      volumes:
+        - name: nginx-storage
+          persistentVolumeClaim:
+            claimName: nginx-sc-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: prasad
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend
+  namespace: prasad
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: hari.chaitu.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
+# ---
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: pvc-writer
+#   namespace: prasad
+# spec:
+#   restartPolicy: Never
+#   containers:
+#     - name: writer
+#       image: busybox
+#       command: ["sh", "-c", "sleep 3600"]
+#       resources:
+#         limits:
+#           memory: "128Mi"
+#           cpu: "500m"
+#         requests:
+#           memory: "64Mi"
+#           cpu: "250m"
+#       volumeMounts:
+#         - mountPath: /mnt
+#           name: nginx-storage
+#   volumes:
+#     - name: nginx-storage
+#       persistentVolumeClaim:
+#         claimName: nginx-sc-pvc
+...

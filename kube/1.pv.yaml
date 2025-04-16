@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nginx-pv
+spec:
+  capacity:
+    storage: 1Gi  # Size of the volume
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/tmp/data"  # Path on the node where the volume will be stored
+  storageClassName: ""
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-pvc
+  namespace: prasad  # Make sure this namespace exists
+spec:
+  accessModes:
+    - ReadWriteOnce  # Ensures the volume can be mounted in read-write mode by only one node
+  volumeName: nginx-pv  # Reference to the PersistentVolume by name
+  resources:
+    requests:
+      storage: 1Gi  # Size of the claim (must match the PersistentVolume size)
+  storageClassName: ""
+...

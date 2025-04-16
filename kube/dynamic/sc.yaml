@@ -1,0 +1,28 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nginx-sc
+provisioner: microk8s.io/hostpath
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-sc-pvc       # Name of the claim
+  namespace: prasad        # (Optional) Namespace where PVC is created
+spec:
+  accessModes:
+    - ReadWriteOnce        # Can be mounted as read-write by one node
+  resources:
+    requests:
+      storage: 1Gi         # How much storage you want
+  storageClassName: nginx-sc   # Which StorageClass to use
+
+---
+# reclaimPolicy
+# Delete: when  pod is deleted, the volume will be deleted
+# Retain: When the pod is deleted, the storage stays with the data inside.
+# Recycle: When the pod is deleted, the storage is cleaned and reused. 
+---
